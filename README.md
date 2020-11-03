@@ -50,16 +50,16 @@ sudo mount -a
 ### Synchronize the desired Google Photos album with directory /mnt/fotos
 This will get the images from the Google Photos album called "piframe0" with folder /mnt/fotos.
 
-Setting up rclone is beyond this documentation, but it's really easy. After installing it, run 
-> rclone config
-And follow the instructions. You will need to create the album via rclone. 
-Notes:
-1. Google won't let rclone touch the current albums in Google Photos via the current version of it's API. A
-2. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder.
-#Create the album in Google Photos
-> ~/rclone-v1.53.1-linux-arm/rclone .....
-#Run the synchronization command:
-~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos
-#Mount the .bin file as mass storage:
-sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1
-#Enjoy the photos in your digital frame.
+Setting up rclone is beyond this documentation, but it's really easy. After installing it, run  
+> rclone config 
+And follow the instructions. You will need to create the album via rclone.  
+Notes: 
+1. Google won't let rclone touch the current albums in Google Photos via the current version of it's API. 
+2. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder. 
+#Create the album in Google Photos 
+> ~/rclone-v1.53.1-linux-arm/rclone ..... 
+#Run the synchronization command: 
+~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos 
+#Mount the .bin file as mass storage: 
+sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 
+#Enjoy the photos in your digital frame. 
