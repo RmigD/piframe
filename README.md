@@ -15,12 +15,16 @@ This is done by following the instructions in the magpi url above. We start by b
 
 > Next, we need to enable the USB driver which provides the gadget modes, by editing two configuration files.
 >>	sudo nano /boot/config.txt
+
 > Scroll to the bottom and append the line below:
 >>	dtoverlay=dwc2
+
 > Press CTRL+O followed by Enter to save, and then CTRL+X to quit.
 >>	sudo nano /etc/modules
+
 > Append the line below, just after the i2c-dev line:
 >>	dwc2
+
 > Press CTRL+O followed by Enter to save, and then CTRL+X to quit.
 > Now shut down the Pi Zero W with the command:
 >>	sudo halt
