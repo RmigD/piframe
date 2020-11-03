@@ -54,7 +54,7 @@ Setting up rclone is beyond this documentation, but it's really easy. After inst
 > rclone config 
 And follow the instructions. You will need to create the album via rclone.  
 Notes: 
-1. Google won't let rclone touch the current albums in Google Photos via the current version of it's API. 
+1. Google won't let rclone touch the current albums in Google Photos via the current version of its API. This is why you need to create an album with rclone itself.
 2. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder. 
 #Create the album in Google Photos 
 > ~/rclone-v1.53.1-linux-arm/rclone ..... 
