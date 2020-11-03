@@ -67,18 +67,18 @@ Mount all content as specified inside fstab:
 > sudo mount -a 
 
 #### Synchronize the desired Google Photos album with directory /mnt/fotos (rclone usage)
-This will get the images from the Google Photos album called "piframe0" with folder /mnt/fotos. 
+This will get the images from the Google Photos album called "piframe0" into the folder /mnt/fotos (which is actually the .bin file). 
 
-Setting up rclone is beyond this documentation, but it's really easy. After installing it, run: 
-> rclone config 
-And follow the instructions. You will need to create the album via rclone. 
+Setting up rclone is beyond this documentation, but it's really easy. See the bottom of this file for more info. After installing it (or unzipping the files), run: 
+> ~/rclone-v1.53.1-linux-arm/rclone config
+...and follow the instructions.
 ##### Notes: 
-1. Google won't let rclone touch the current albums in Google Photos via the current version of its API. This is why you need to create an album with rclone itself.
-2. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder. 
+1. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder. 
+2. Google won't let rclone touch the current albums in Google Photos via the current version of its API. This is why you need to create an album with rclone itself. See next step. 
 
-Create the album in Google Photos 
+Create the album in Google Photos, via rclone: 
 > ~/rclone-v1.53.1-linux-arm/rclone mkdir remote:album/piframe0 
-You can then add a couple of photos to the album for testing purposes.
+You can then add a couple of photos to the album for testing purposes. 
 Run the synchronization command (pull images from Google Photos into /mnt/fotos): 
 > ~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos 
 Mount the .bin file as mass storage so that the digital photo frame interprets it as a USB stick that was just connected: 
@@ -86,7 +86,7 @@ Mount the .bin file as mass storage so that the digital photo frame interprets i
 Enjoy the photos in your digital frame. They might take a few seconds to load.. 
 
 ## Setting it up after a reboot
-This can be optimized. One of the improvements to be done is to integrate the mount command within fstab, but I still haven't managed to do it. Another improvement is to turn put these into a bash file and execute at boot time.
+If you reboot the RPi you will need to run a few commands. *This can be optimized!* One of the improvements to be done is to integrate the mount command within fstab, but I still haven't managed to do it. Another improvement is to turn put these into a bash file and execute at boot time.
 
 > sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //192.168.1.27/others/piframe /mnt/fotosnas
 >
@@ -110,5 +110,5 @@ This can be turned into a bash file and run daily or whenever you want, via a cr
 > sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 # Simulate the attachment of the USB storage to the Digital Frame. It should start playing the new photos after a few seconds (depends on the frame, I assume).
 
 ## More info about rclone:
-https://rclone.org/googlephotos/
+https://rclone.org/googlephotos/ 
 rclone has very good documentation, so it should be relatively easy to set up that part. If you understood the commands above, you're practically there already.
