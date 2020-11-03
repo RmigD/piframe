@@ -3,11 +3,12 @@
 
 These are my personal notes, but I'll create an intro to help anyone else.
 
-I'm taking a regular photo frame (with a USB port), adding a Raspberry Pi Zero W and integrate them with Google Photos. The RPi will be interpreted as a USB stick by the digital photo frame. Since the SD card in the RPi has only 4 GB (1.8 GB free after a Raspberry Pi OS lite install), I will need my NAS to keep the photos that are synced with the Google Photos album. I can then add photos to my Google Photos album, and overnight synchronize them with the frame. This could easily be adapted to read photos from a folder in my NAS, but managing these via Google Photos is much more convenient.
-
-I've setup my RPi Zero W according to this page: https://magpi.raspberrypi.org/articles/pi-zero-w-smart-usb-flash-drive - until step 10. I've skipped the Samba setup.
-
-By following the guide above, we can see that I need to create a container (the .bin file) which will contain the images. This .bin file will act like the content of the USB stick that the frame will "see". 32GB of images obviously won't fit within the meager 4 GB SD card, so I'll save the .bin file in the NAS. In order for the RPi to "see" this file as if it was inside the SD card, I will mount the NAS folder as a local folder in the RPi. We will then need to mount the .bin file so that the contents are readable (and we can manage the photos inside via [rclone](www.rclone.org)). 
+I'm taking a regular photo frame (with a USB port), adding a Raspberry Pi Zero W and integrate them with Google Photos. The RPi will be interpreted as a USB stick by the digital photo frame. Since the SD card in the RPi has only 4 GB (1.8 GB free after a Raspberry Pi OS lite install), I will need my NAS to keep the photos that are synced with the Google Photos album. I can then add photos to my Google Photos album, and overnight synchronize them with the frame. 
+This could easily be adapted to read photos from a folder in my NAS, but managing these via Google Photos is much more convenient. 
+ 
+I've setup my RPi Zero W according to this page: https://magpi.raspberrypi.org/articles/pi-zero-w-smart-usb-flash-drive - until step 10. I've skipped the Samba setup. 
+ 
+By following the guide above, we can see that I need to create a container (the .bin file) which will contain the images. This .bin file will act like the content of the USB stick that the frame will "see". 32GB of images obviously won't fit within the meager 4 GB SD card, so I'll save the .bin file in the NAS. In order for the RPi to "see" this file as if it was inside the SD card, I will mount the NAS folder as a local folder in the RPi. I will then mount the .bin file as well, so that the contents are readable (and we can manage the photos inside it via [rclone](www.rclone.org)). 
 
 ## Setting it up from scratch
 ### Turning the RPi Zero W into a "USB stick"
@@ -107,3 +108,7 @@ This can be turned into a bash file and run daily or whenever you want, via a cr
 > sync # Not sure this is needed but it won't hurt
 > 
 > sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 # Simulate the attachment of the USB storage to the Digital Frame. It should start playing the new photos after a few seconds (depends on the frame, I assume).
+
+## More info about rclone:
+https://rclone.org/googlephotos/
+rclone has very good documentation, so it should be relatively easy to set up that part. If you understood the commands above, you're practically there already.
