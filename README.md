@@ -45,10 +45,10 @@ sudo mkdosfs /mnt/fotosnas/piusb.bin -F 32 -I
 #Setup fstab to mount the .bin file in folder /mnt/fotos. Add the following to file /mnt/fstab:
 > /mnt/fotosnas/piusb.bin /mnt/fotos vfat users,umask=000,nofail 0 2
 #Mount all content as specified inside fstab:
-sudo mount -a
+sudo mount -a 
 
 ### Synchronize the desired Google Photos album with directory /mnt/fotos
-This will get the images from the Google Photos album called "piframe0" with folder /mnt/fotos.
+This will get the images from the Google Photos album called "piframe0" with folder /mnt/fotos. 
 
 Setting up rclone is beyond this documentation, but it's really easy. After installing it, run  
 > rclone config 
