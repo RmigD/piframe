@@ -95,7 +95,7 @@ Enjoy the photos in your digital frame. They might take a few seconds to load..
 ## Setting it up after a reboot
 If you reboot the RPi you will need to run a few commands. *This can be optimized!* One of the improvements to be done is to integrate the mount command within fstab, but I still haven't managed to do it. Another improvement is to turn put these into a bash file and execute at boot time.
 
-> sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //192.168.1.27/others/piframe /mnt/fotosnas
+> sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //NAS/others/piframe /mnt/fotosnas
 >
 > sudo mount -a # fstab was read during the boot process, but /mnt/fotosnas was not yet mounted, so it didn't work. Let's try again with this command.
 > 
