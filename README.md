@@ -28,3 +28,38 @@ This is done by following the instructions in the magpi url above. We start by b
 > Press CTRL+O followed by Enter to save, and then CTRL+X to quit.
 > Now shut down the Pi Zero W with the command:
 >>	sudo halt
+
+## Setting up the image synchronization 
+Part of these instructions are included in the magpi url above.
+### Create folder structure and mount content
+#Create folder /mnt/fotosnas (will contain the .bin file) in the RPi
+> mkdir /mnt/fotosnas
+#Create folder /mnt/fotos (will show the contents of the .bin file):
+> mkdir /mnt/fotos
+#The NAS access credentials are stored inside the file /home/pi/.nascreds. Let's mount the NAS folder where we will keep the .bin file, as folder /mnt/fotosnas in the RPi Zero W:
+> sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //NAS/others/piframe /mnt/fotosnas
+#Create the .bin file inside /mnt/fotosnas (this will create the file in the NAS. It will take a long while, depending on the size. Start small to test. This one will have almost 30 GB).
+> sudo dd bs=1M if=/dev/zero of=/mnt/fotosnas/piusb.bin count=30000 
+#Format the .bin file
+sudo mkdosfs /mnt/fotosnas/piusb.bin -F 32 -I
+#Setup fstab to mount the .bin file in folder /mnt/fotos. Add the following to file /mnt/fstab:
+> /mnt/fotosnas/piusb.bin /mnt/fotos vfat users,umask=000,nofail 0 2
+#Mount all content as specified inside fstab:
+sudo mount -a
+
+### Synchronize the desired Google Photos album with directory /mnt/fotos
+This will get the images from the Google Photos album called "piframe0" with folder /mnt/fotos.
+
+Setting up rclone is beyond this documentation, but it's really easy. After installing it, run 
+> rclone config
+And follow the instructions. You will need to create the album via rclone. 
+Notes:
+1. Google won't let rclone touch the current albums in Google Photos via the current version of it's API. A
+2. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder.
+#Create the album in Google Photos
+> ~/rclone-v1.53.1-linux-arm/rclone .....
+#Run the synchronization command:
+~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos
+#Mount the .bin file as mass storage:
+sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1
+#Enjoy the photos in your digital frame.
