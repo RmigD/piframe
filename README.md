@@ -77,12 +77,19 @@ Setting up rclone is beyond this documentation, but it's really easy. See the bo
 2. Google won't let rclone touch the current albums in Google Photos via the current version of its API. This is why you need to create an album with rclone itself. See next step. 
 
 Create the album in Google Photos, via rclone: 
+>
 > ~/rclone-v1.53.1-linux-arm/rclone mkdir remote:album/piframe0 
+>
 You can then add a couple of photos to the album for testing purposes. 
+>
 Run the synchronization command (pull images from Google Photos into /mnt/fotos): 
+>
 > ~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos 
+>
 Mount the .bin file as mass storage so that the digital photo frame interprets it as a USB stick that was just connected: 
+>
 > sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 
+>
 Enjoy the photos in your digital frame. They might take a few seconds to load.. 
 
 ## Setting it up after a reboot
