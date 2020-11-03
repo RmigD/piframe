@@ -13,8 +13,10 @@ By following the guide above, we can see that I need to create a container (the 
 ## Setting it up from scratch
 ### Turning the RPi Zero W into a "USB stick"
 
-> sudo raspi-config 
-Activate "wait for network" at boot 
+Start by going into
+> sudo raspi-config  
+>
+and activate "wait for network" at boot. 
 
 The following is done by following part of the instructions in the magpi url above. We start by burning the system image onto the SD card, and setting it up for network access and SSH access. After this, in short, we do the following: 
 
