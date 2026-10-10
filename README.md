@@ -1,123 +1,242 @@
+
+
+---
+
 # piframe
+
 ## Intro
 
-These are my personal notes, but I'll create an intro to help anyone else.
+I'm turning a regular USB-powered photo frame into a Google Photos frame using a Raspberry Pi Zero W. The Pi presents itself to the frame as a USB flash drive, so the frame reads it like any stick.
 
-I'm taking a regular photo frame (with a USB port), adding a Raspberry Pi Zero W and integrate them with Google Photos. The RPi will be interpreted as a USB stick by the digital photo frame. Since the SD card in the RPi has only 4 GB (1.8 GB free after a Raspberry Pi OS lite install), I will need my NAS to keep the photos that are synced with the Google Photos album. I can then add photos to my Google Photos album, and overnight synchronize them with the frame. 
-This could easily be adapted to read photos from a folder in my NAS, but managing these via Google Photos is much more convenient. 
- 
-I've setup my RPi Zero W according to this page: https://magpi.raspberrypi.org/articles/pi-zero-w-smart-usb-flash-drive - until step 10. I've skipped the Samba setup. 
- 
-By following the guide above, we can see that I need to create a container (the .bin file) which will contain the images. This .bin file will act like the content of the USB stick that the frame will "see". 32GB of images obviously won't fit within the meager 4 GB SD card, so I'll save the .bin file in the NAS. In order for the RPi to "see" this file as if it was inside the SD card, I will mount the NAS folder as a local folder in the RPi. I will then mount the .bin file as well, so that the contents are readable (and we can manage the photos inside it via [rclone](www.rclone.org)). 
+The Pi's SD card is small (4 GB, about 1.8 GB free after a Raspberry Pi OS Lite install), so the photos live on my NAS. The workflow:
 
-## Setting it up from scratch
-### Turning the RPi Zero W into a "USB stick"
+1. Add photos to a Google Photos album.
+2. Overnight, rclone syncs that album to a FAT32 disk image (`piusb.bin`) stored on the NAS.
+3. The Pi exposes that image to the frame as a USB drive.
 
-Start by going into
-> sudo raspi-config  
->
-and activate "wait for network" at boot. 
+This could read from a NAS folder directly, but Google Photos is far more convenient for managing the photos.
 
-The following is done by following part of the instructions in the magpi url above. We start by burning the system image onto the SD card, and setting it up for network access and SSH access. After this, in short, we do the following: 
+## Hardware and prerequisites
 
-> Next, we need to enable the USB driver which provides the gadget modes, by editing two configuration files. 
->
->>	sudo nano /boot/config.txt 
->
-> Scroll to the bottom and append the line below:
->
->>	dtoverlay=dwc2
->
-> Press CTRL+O followed by Enter to save, and then CTRL+X to quit.
->
->> sudo nano /etc/modules 
->
-> Append the line below, just after the i2c-dev line:
->> dwc2
->
-> Press CTRL+O followed by Enter to save, and then CTRL+X to quit. 
-> Now shut down the Pi Zero W with the command: 
->> sudo halt 
+- Raspberry Pi Zero W with Raspberry Pi OS Lite
+- A microSD card (4 GB or larger)
+- A NAS with an SMB/CIFS share (this setup doesn't use Samba on the Pi)
+- A USB cable from the Pi's **data** port (the inner micro-USB, labelled USB) to the frame
+- Power for the Pi from the **PWR IN** port. Don't power it from the frame.
+- rclone 1.53 or newer (the `apt` package is too old for Google Photos support; see below)
 
-### Setting up the image synchronization 
-Part of these instructions are included in the magpi url above.
-### Create folder structure and mount content
-Create folder /mnt/fotosnas (will contain the .bin file) in the RPi 
->
-> mkdir /mnt/fotosnas 
->
-Create folder /mnt/fotos (will show the contents of the .bin file): 
->
-> mkdir /mnt/fotos 
+Base setup follows the [MagPi guide](https://magpi.raspberrypi.org/articles/pi-zero-w-smart-usb-flash-drive) up to step 10, skipping the Samba section. During `sudo raspi-config`, enable **Wait for network at boot**.
 
-The NAS access credentials are stored inside the file /home/pi/.nascreds. Let's mount the NAS folder where we will keep the .bin file. It will show in the RPi as folder /mnt/fotosnas: 
-> sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //NAS/others/piframe /mnt/fotosnas 
->
-Create the .bin file inside /mnt/fotosnas (this will create the file in the NAS. It will take a while, depending on the size. Start small to test. This one will have almost 30 GB). 
->
-> sudo dd bs=1M if=/dev/zero of=/mnt/fotosnas/piusb.bin count=30000 
->
-Format the .bin file: 
-> sudo mkdosfs /mnt/fotosnas/piusb.bin -F 32 -I 
->
-Setup fstab to mount the .bin file in folder /mnt/fotos by adding the following to file /mnt/fstab: 
->
-> /mnt/fotosnas/piusb.bin /mnt/fotos vfat users,umask=000,nofail 0 2 
->
-Mount all content as specified inside fstab: 
->
-> sudo mount -a 
+## Part 1: Turn the Pi into a USB gadget
 
-#### Synchronize the desired Google Photos album with directory /mnt/fotos (rclone usage)
-This will get the images from the Google Photos album called "piframe0" into the folder /mnt/fotos (which is actually the .bin file). 
+Enable the USB gadget driver:
 
-Setting up rclone is beyond this documentation, but it's really easy. See the bottom of this file for more info. After installing it (or unzipping the files), run: 
-> ~/rclone-v1.53.1-linux-arm/rclone config
-...and follow the instructions.
-##### Notes: 
-1. Installing rclone via apt-get installed an older version of rclone, without the option to sync Google Photos. I just downloaded the latest 32 bit ARM version from rclone and unzipped it into the home folder. 
-2. Google won't let rclone touch the current albums in Google Photos via the current version of its API. This is why you need to create an album with rclone itself. See next step. 
+```bash
+sudo nano /boot/config.txt
+```
 
-Create the album in Google Photos, via rclone: 
->
-> ~/rclone-v1.53.1-linux-arm/rclone mkdir remote:album/piframe0 
->
-You can then add a couple of photos to the album for testing purposes. 
->
-Run the synchronization command (pull images from Google Photos into /mnt/fotos): 
->
-> ~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos 
->
-Mount the .bin file as mass storage so that the digital photo frame interprets it as a USB stick that was just connected: 
->
-> sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 
->
-Enjoy the photos in your digital frame. They might take a few seconds to load.. 
+Append at the bottom:
 
-## Setting it up after a reboot
-If you reboot the RPi you will need to run a few commands. *This can be optimized!* One of the improvements to be done is to integrate the mount command within fstab, but I still haven't managed to do it. Another improvement is to turn put these into a bash file and execute at boot time.
+```
+dtoverlay=dwc2
+```
 
-> sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //NAS/others/piframe /mnt/fotosnas
->
-> sudo mount -a # fstab was read during the boot process, but /mnt/fotosnas was not yet mounted, so it didn't work. Let's try again with this command.
-> 
-> sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 # "attach the USB storage" to the photo frame.
+Then:
 
-In summary: we mount the NAS folder that contains the .bin file in /mnt/fotosnas. Then we mount the .bin file as /mnt/fotos. Finally, we simulate attaching the USB storage into the digital photo frame. 
-Mounting /mnt/fotos at boot time (so before we mount the .bin file) does not make sense. I'm hoping I can include the first mount command into fstab, eventually.
+```bash
+sudo nano /etc/modules
+```
 
-## Updating images
+Add `dwc2` on a new line after `i2c-dev`. Save both files (CTRL+O, Enter, CTRL+X), then shut down:
 
-This can be turned into a bash file and run daily or whenever you want, via a cron job. Or manually, each time someone makes changes to the album.
+```bash
+sudo halt
+```
 
-> sudo modprobe -r g_mass_storage # Simulate the removing of the USB storage from the digital frame. Pictures will stop playing.
-> 
-> ~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos #Sync photos with Google Photos
-> 
-> sync # Not sure this is needed but it won't hurt
-> 
-> sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1 # Simulate the attachment of the USB storage to the Digital Frame. It should start playing the new photos after a few seconds (depends on the frame, I assume).
+## Part 2: Create the image and mount it
 
-## More info about rclone:
-https://rclone.org/googlephotos/ 
-rclone has very good documentation, so it should be relatively easy to set up that part. If you understood the commands above, you're practically there already.
+### Create the folders
+
+```bash
+sudo mkdir -p /mnt/fotosnas /mnt/fotos
+```
+
+- `/mnt/fotosnas` holds the NAS share, which contains the `.bin` file.
+- `/mnt/fotos` shows the contents of the `.bin` file.
+
+### Mount the NAS
+
+NAS credentials are in `/home/pi/.nascreds`, in the standard `username=` / `password=` format. Restrict its permissions:
+
+```bash
+chmod 600 /home/pi/.nascreds
+sudo mount -t cifs -o credentials=/home/pi/.nascreds,vers=2.0,uid=pi //NAS/others/piframe /mnt/fotosnas
+```
+
+### Create the disk image
+
+This writes about 29 GiB to the NAS and can take a long time. Start with a smaller `count` to test.
+
+```bash
+sudo dd bs=1M if=/dev/zero of=/mnt/fotosnas/piusb.bin count=30000 status=progress
+sudo mkfs.vfat -F 32 -I /mnt/fotosnas/piusb.bin
+```
+
+`mkdosfs` is an alias for `mkfs.vfat`, so either name works.
+
+### Make the mounts persistent
+
+Add these lines to **`/etc/fstab`** (not `/mnt/fstab`):
+
+```
+//NAS/others/piframe /mnt/fotosnas cifs credentials=/home/pi/.nascreds,vers=2.0,uid=pi,gid=pi,_netdev,nofail 0 0
+/mnt/fotosnas/piusb.bin /mnt/fotos vfat users,umask=000,nofail,x-systemd.requires=/mnt/fotosnas 0 0
+```
+
+- `_netdev` and `nofail` stop the boot from hanging if the NAS is offline.
+- `x-systemd.requires` ensures the NAS is mounted before the image is loaded.
+
+Then mount everything:
+
+```bash
+sudo mount -a
+```
+
+## Part 3: Sync Google Photos to the image
+
+### Configure rclone
+
+Download the latest ARM build from [rclone.org](https://rclone.org/downloads/) and unzip it in your home folder, then run:
+
+```bash
+~/rclone-v1.53.1-linux-arm/rclone config
+```
+
+Follow the prompts. The remote name is used throughout this document, so name it `piframe`.
+
+**Note:** Google's current API doesn't let rclone modify albums you created in the Google Photos app. The workaround is to create the album with rclone itself:
+
+```bash
+~/rclone-v1.53.1-linux-arm/rclone mkdir piframe:album/piframe0
+```
+
+Add a few test photos to that album in the Google Photos app, then run an initial sync:
+
+```bash
+~/rclone-v1.53.1-linux-arm/rclone sync piframe:album/piframe0 /mnt/fotos
+```
+
+**Warning:** `sync` makes the destination match the source, so it deletes files from `/mnt/fotos` that have been removed from the album. If you'd rather keep old photos, use `copy` instead.
+
+### Expose the image to the frame
+
+```bash
+sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1
+```
+
+The frame should detect a USB drive and start showing photos after a few seconds.
+
+## Part 4: Update the photos
+
+Every update follows the same sequence:
+
+1. Detach the image from the frame, so the frame stops reading it.
+2. Unmount the image, so the Pi finishes all writes.
+3. Sync from Google Photos.
+4. Reattach the image.
+
+Save this as `/home/pi/piframe-update.sh`:
+
+```bash
+#!/bin/bash
+set -e
+
+RCLONE=/home/pi/rclone-v1.53.1-linux-arm/rclone
+RCLONE_CONF=/home/pi/.config/rclone/rclone.conf
+
+# 1. Detach from the frame (ignore the error if it isn't attached)
+sudo modprobe -r g_mass_storage 2>/dev/null || true
+
+# 2. Make sure the NAS and image are mounted
+mountpoint -q /mnt/fotosnas || sudo mount /mnt/fotosnas
+mountpoint -q /mnt/fotos || sudo mount /mnt/fotos
+
+# 3. Sync the album into the image
+"$RCLONE" --config "$RCLONE_CONF" sync piframe:album/piframe0 /mnt/fotos
+
+# 4. Flush writes and unmount so the image is consistent
+sync
+sudo umount /mnt/fotos
+
+# 5. Reattach to the frame
+sudo modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1
+```
+
+Make it executable and test it:
+
+```bash
+chmod +x /home/pi/piframe-update.sh
+/home/pi/piframe-update.sh
+```
+
+To run it nightly, add this to the **pi** user's crontab (`crontab -e`, not `sudo crontab -e`):
+
+```
+0 3 * * * /home/pi/piframe-update.sh >> /home/pi/piframe-update.log 2>&1
+```
+
+Running it as `pi` matters: if root ran it, rclone would look for its config in `/root/.config/rclone` and fail. The script uses `sudo` only for the mount and gadget commands, which Raspberry Pi OS allows without a password for the `pi` user.
+
+## Part 5: Attach the image at boot
+
+After a reboot, the NAS and image mount automatically through fstab. The USB gadget doesn't, so create a systemd unit:
+
+```bash
+sudo nano /etc/systemd/system/piframe-gadget.service
+```
+
+```ini
+[Unit]
+Description=Expose piframe image to the digital frame
+After=mnt-fotos.mount
+Requires=mnt-fotos.mount
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/sbin/modprobe g_mass_storage file=/mnt/fotosnas/piusb.bin stall=0 ro=1
+
+[Install]
+WantedBy=multi-user.target
+```
+
+Enable it:
+
+```bash
+sudo systemctl daemon-reload
+sudo systemctl enable piframe-gadget.service
+```
+
+## Optional: trigger the sync from Home Assistant
+
+If you run Home Assistant, you can trigger a sync on demand. Set up SSH key access from Home Assistant to the Pi, then add a `shell_command` to `configuration.yaml`:
+
+```yaml
+shell_command:
+  piframe_update: "ssh -i /config/.ssh/id_piframe pi@piframe /home/pi/piframe-update.sh"
+```
+
+You can then call `shell_command.piframe_update` from a button or automation.
+
+## Troubleshooting
+
+- **Frame shows no photos:** Check that the image mounts (`mountpoint /mnt/fotos`) and that the gadget is loaded (`lsmod | grep g_mass_storage`).
+- **Boot hangs or takes a long time:** Usually the NAS is unreachable. The `nofail` and `_netdev` options should prevent this, but check `journalctl -b` for mount errors.
+- **Sync fails under cron:** Check `/home/pi/piframe-update.log`. The most common cause is running the script as root.
+- **Corrupted image:** Always run the update script rather than syncing manually while the gadget is attached.
+
+## More info about rclone
+
+- [rclone Google Photos documentation](https://rclone.org/googlephotos/)
+
+rclone's documentation is thorough. If the commands above make sense to you, the rest is mostly configuration.
